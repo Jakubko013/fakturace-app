@@ -1,0 +1,80 @@
+name: Sestavení Android appky (TWA)
+
+# Spouští se jen ručně — appka se mění zřídka a sestavení potřebuje
+# podpisový klíč uložený jako tajemství repozitáře (viz README-android.md).
+on:
+  workflow_dispatch:
+    inputs:
+      versionCode:
+        description: "Číslo verze appky (celé číslo, musí při každém nahrání do Play Console růst)"
+        required: true
+        default: "1"
+      versionName:
+        description: "Zobrazené číslo verze (např. 1.0.1)"
+        required: true
+        default: "1.0.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Ověření podpisového klíče
+        run: |
+          if [ -z "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" ]; then
+            echo "::error::Chybí tajemství ANDROID_KEYSTORE_BASE64 — viz README-android.md."
+            exit 1
+          fi
+
+      - name: Uložení podpisového klíče ze secretu
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android.keystore
+
+      - name: Nastavení čísla verze
+        run: |
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync("twa-manifest.json", "utf8"));
+            m.appVersionCode = parseInt(process.env.VERSION_CODE, 10);
+            m.appVersionName = process.env.VERSION_NAME;
+            fs.writeFileSync("twa-manifest.json", JSON.stringify(m, null, 2));
+          '
+        env:
+          VERSION_CODE: ${{ github.event.inputs.versionCode }}
+          VERSION_NAME: ${{ github.event.inputs.versionName }}
+
+      - name: Instalace Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Nastavení cest k JDK a Android SDK pro Bubblewrap
+        run: |
+          mkdir -p "$HOME/.bubblewrap"
+          cat > "$HOME/.bubblewrap/config.json" <<EOF
+          {"jdkPath":"${JAVA_HOME}","androidSdkPath":"${ANDROID_HOME}"}
+          EOF
+          cat "$HOME/.bubblewrap/config.json"
+
+      - name: Sestavení a podepsání (bubblewrap build)
+        run: yes "" | bubblewrap build --skipPwaValidation
+        env:
+          BUBBLEWRAP_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          BUBBLEWRAP_KEY_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+
+      - name: Úklid podpisového klíče z pracovního adresáře
+        if: always()
+        run: rm -f android.keystore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fakturace-Android
+          path: |
+            app-release-bundle.aab
+            app-release-signed.apk
+          if-no-files-found: error
+          retention-days: 90

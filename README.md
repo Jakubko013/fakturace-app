@@ -13,3 +13,8 @@ Otevřít na telefonu a přes „Přidat na plochu“ (iOS Safari) nebo „Insta
 aplikaci“ (Android Chrome) si appku nainstalovat jako běžnou appku. Data
 zůstávají jen v tomto telefonu/prohlížeči (localStorage), nikam se
 neposílají.
+
+## Google Play
+
+Appka se dá zabalit i jako opravdová Android appka pro Google Play (TWA) —
+postup je v [README-android.md](README-android.md).

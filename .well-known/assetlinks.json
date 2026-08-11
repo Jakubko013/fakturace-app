@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "cz.fakturace.app",
+      "sha256_cert_fingerprints": [
+        "DB:E1:81:F0:27:5F:50:79:FD:33:0D:A1:41:04:C9:18:64:CA:09:3B:29:3D:22:1B:25:78:1C:EF:B8:E8:4E:B1"
+      ]
+    }
+  }
+]
