@@ -1,0 +1,206 @@
+/* Úpravy pro telefon a úzké okno prohlížeče.
+
+   Načítá se až po sdíleném styles.css a jen dolaďuje rozvržení — barvy,
+   panely a formuláře zůstávají stejné jako v desktopové aplikaci. */
+
+:root {
+  --hlavicka-vyska: 60px;
+}
+
+html {
+  /* iOS Safari umí odscrollovat celou stránku při psaní do inputu — appka
+     má vlastní scrollování uvnitř #obsah, tohle to znovu nedovolí. */
+  overscroll-behavior-y: none;
+}
+
+body {
+  padding-top: env(safe-area-inset-top);
+  overflow: hidden;
+}
+
+/* ---------------- tlačítko nabídky a zastínění ---------------- */
+
+#drawer-otevrit {
+  display: none;
+  border: none;
+  background: transparent;
+  padding: 8px;
+  margin: -8px 4px -8px -8px;
+  border-radius: 8px;
+}
+#drawer-otevrit:hover {
+  background: var(--panel-tlumeny);
+}
+.hamburger-ikona,
+.hamburger-ikona::before,
+.hamburger-ikona::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text-stredni);
+  border-radius: 2px;
+}
+.hamburger-ikona {
+  position: relative;
+}
+.hamburger-ikona::before,
+.hamburger-ikona::after {
+  content: "";
+  position: absolute;
+  left: 0;
+}
+.hamburger-ikona::before {
+  top: -6px;
+}
+.hamburger-ikona::after {
+  top: 6px;
+}
+
+#drawer-zastineni {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 12, 22, 0.5);
+  z-index: 60;
+}
+
+/* ---------------- úzká obrazovka: boční panel jako výsuvná nabídka ---------------- */
+
+@media (max-width: 900px) {
+  #aplikace {
+    position: relative;
+    overflow: hidden;
+  }
+
+  #drawer-otevrit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #bocnipanel {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 70;
+    width: min(84vw, 300px);
+    flex: 0 0 auto;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 12px 0 36px -12px rgba(0, 0, 0, 0.45);
+  }
+  #aplikace.drawer-otevreny #bocnipanel {
+    transform: translateX(0);
+  }
+  #aplikace.drawer-otevreny #drawer-zastineni {
+    display: block;
+  }
+
+  #obsah {
+    width: 100%;
+  }
+
+  .zahlavi {
+    padding: 12px 16px;
+    padding-top: calc(12px + env(safe-area-inset-top));
+    gap: 10px;
+  }
+  .zahlavi h1 {
+    font-size: 1.02rem;
+  }
+  .zahlavi .popisek {
+    font-size: 0.76rem;
+  }
+  .zahlavi .vpravo {
+    width: 100%;
+    order: 3;
+  }
+  .zahlavi .vpravo button,
+  .zahlavi .vpravo .tlacitko {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
+  .stranka {
+    padding: 16px 14px 40px;
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  }
+
+  .panel > h2 {
+    padding: 13px 16px;
+    flex-wrap: wrap;
+  }
+  .panel .telo {
+    padding: 14px 16px;
+  }
+
+  .dlazdice {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  .karta .hodnota {
+    font-size: 1.28rem;
+  }
+
+  .nastroje {
+    flex-wrap: wrap;
+  }
+  .nastroje input[type="text"],
+  .nastroje select {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .zastineni {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .dialog {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .souhrn {
+    width: 100%;
+  }
+}
+
+/* ---------------- dotykové cíle ---------------- */
+
+@media (pointer: coarse) {
+  button,
+  .tlacitko {
+    min-height: 40px;
+    padding: 9px 15px;
+  }
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  input[type="email"],
+  input[type="tel"],
+  select,
+  textarea {
+    min-height: 42px;
+    font-size: 16px; /* zabrání iOS Safari automaticky přiblížit stránku při psaní */
+  }
+  .nabidka a {
+    padding: 12px 20px;
+  }
+  table.seznam td,
+  table.seznam th {
+    padding: 12px 12px;
+  }
+  button.drobne {
+    min-height: 32px;
+  }
+}
+
+/* Pod klávesnicí na malém displeji ať jde k tlačítkům dialogu vždy dojet. */
+.dialog .patka {
+  padding-bottom: max(14px, env(safe-area-inset-bottom));
+}

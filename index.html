@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://ares.gov.cz"
+    />
+    <meta name="theme-color" content="#f4f6fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c1220" media="(prefers-color-scheme: dark)" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Fakturace" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Fakturace</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" type="image/png" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles-mobile.css" />
+  </head>
+  <body>
+    <div id="aplikace">
+      <div id="drawer-zastineni"></div>
+      <nav id="bocnipanel">
+        <div class="znacka">
+          <b id="znacka-jmeno">Fakturace</b>
+          <span id="znacka-popis">daňová evidence</span>
+        </div>
+        <div class="nabidka" id="nabidka"></div>
+        <div class="patka-panelu" id="patka-panelu"></div>
+      </nav>
+
+      <main id="obsah">
+        <header class="zahlavi">
+          <button id="drawer-otevrit" aria-label="Otevřít nabídku" title="Nabídka">
+            <span class="hamburger-ikona"></span>
+          </button>
+          <div>
+            <h1 id="nadpis">Přehled</h1>
+            <div class="popisek" id="podnadpis"></div>
+          </div>
+          <div class="vpravo" id="akce-zahlavi"></div>
+        </header>
+        <div class="stranka" id="pohled"></div>
+      </main>
+    </div>
+
+    <div id="hlasky"></div>
+    <div id="dialogy"></div>
+
+    <script src="js/vendor/qrcode.min.js"></script>
+    <script src="js/core/util.js"></script>
+    <script src="js/core/validace.js"></script>
+    <script src="js/core/platba.js"></script>
+    <script src="js/core/vypocet.js"></script>
+    <script src="js/core/model.js"></script>
+    <script src="js/core/dph.js"></script>
+    <script src="js/core/denik.js"></script>
+    <script src="js/core/csv.js"></script>
+
+    <script src="js/ui.js"></script>
+    <script src="js/api-web.js"></script>
+    <script src="js/stav.js"></script>
+    <script src="js/doklad.js"></script>
+
+    <script src="js/pohledy/prehled.js"></script>
+    <script src="js/pohledy/faktury.js"></script>
+    <script src="js/pohledy/faktura.js"></script>
+    <script src="js/pohledy/klienti.js"></script>
+    <script src="js/pohledy/vydaje.js"></script>
+    <script src="js/pohledy/denik.js"></script>
+    <script src="js/pohledy/dph.js"></script>
+    <script src="js/pohledy/opakovane.js"></script>
+    <script src="js/pohledy/upominky.js"></script>
+    <script src="js/pohledy/nastaveni.js"></script>
+
+    <script src="js/app.js"></script>
+    <script src="js/mobile-nav.js"></script>
+    <script src="js/registrace-sw.js"></script>
+  </body>
+</html>
