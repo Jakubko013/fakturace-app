@@ -67,9 +67,14 @@
       vykresliSeznam();
     });
 
+    // Tlačítka v záhlaví jsou mimo kontejner (samostatný #akce-zahlavi), takže
+    // se svážou zvlášť; kontejnerová verze obsluhuje i tlačítko v prázdném stavu.
     ui.naKlik(kontejner, "[data-akce='nova-faktura']", () => Fx.app.prejdi("faktura/nova"));
-    ui.naKlik(kontejner, "[data-akce='nova-zaloha']", () => Fx.app.prejdi("faktura/nova/zaloha"));
     ui.naKlik(kontejner, "[data-akce='export']", exportCsv);
+    ui.$("#akce-zahlavi").onclick = (udalost) => {
+      if (udalost.target.closest("[data-akce='nova-faktura']")) Fx.app.prejdi("faktura/nova");
+      else if (udalost.target.closest("[data-akce='nova-zaloha']")) Fx.app.prejdi("faktura/nova/zaloha");
+    };
 
     ui.naKlik(kontejner, "[data-otevri]", (u, prvek) => {
       Fx.app.prejdi("faktura/" + prvek.dataset.otevri);

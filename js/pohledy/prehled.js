@@ -113,8 +113,13 @@
       </div>
     `;
 
+    // Tlačítka v záhlaví jsou mimo kontejner (samostatný #akce-zahlavi), takže
+    // se svážou zvlášť; kontejnerová verze obsluhuje i tlačítko v prázdném stavu.
     ui.naKlik(kontejner, "[data-akce='nova-faktura']", () => Fx.app.prejdi("faktura/nova"));
-    ui.naKlik(kontejner, "[data-akce='novy-vydaj']", () => Fx.app.prejdi("vydaj/novy"));
+    ui.$("#akce-zahlavi").onclick = (udalost) => {
+      if (udalost.target.closest("[data-akce='nova-faktura']")) Fx.app.prejdi("faktura/nova");
+      else if (udalost.target.closest("[data-akce='novy-vydaj']")) Fx.app.prejdi("vydaj/novy");
+    };
     ui.naKlik(kontejner, "tr[data-faktura]", (u, radek) =>
       Fx.app.prejdi("faktura/" + radek.dataset.faktura)
     );
