@@ -14,7 +14,7 @@
       jmeno: "",
       ico: "",
       dic: "",
-      plateceDph: false,
+      plateceDph: true,
       ulice: "",
       mesto: "",
       psc: "",
