@@ -181,16 +181,26 @@
      Sdílecí list nemá k dispozici (starší systém, desktopový prohlížeč),
      PDF se rovnou stáhne jako běžný soubor. */
 
+  // A4 při 96 dpi — rámec je přesně velký jako stránka dokladu, takže
+  // celý dokument = faktura a html2canvas nemá co ořezávat ani posouvat.
+  // (Safari s foreignObjectRendering ořez podle polohy prvku nezvládá —
+  // jakékoli odsazení dokladu v rámci skončilo useknutým okrajem.)
+  const A4_SIRKA_PX = 794;
+  const A4_VYSKA_PX = 1123;
+
+  // Přebije obrazovková pravidla z doklad.js: mobilní "zoom" (html2canvas
+  // ho neumí), vystředění s okraji a stín kolem stránky.
+  const STYL_PRO_FOCENI =
+    "html,body{margin:0!important;padding:0!important;background:#fff!important;overflow:hidden!important}" +
+    ".list{zoom:1!important;margin:0!important;box-shadow:none!important}";
+
   function ziskejTiskovyRamec() {
     let ramec = document.getElementById("fx-tisk-ramec");
     if (!ramec) {
       ramec = document.createElement("iframe");
       ramec.id = "fx-tisk-ramec";
-      // Šířka musí ležet mimo obě mobilní "zoom" pravidla v doklad.js
-      // (zmenšují náhled na šířku ≤820px, ať se vejde na telefon) — jinak
-      // html2canvas vykreslí text rozdvojený a rozjetý, protože CSS zoom
-      // neumí spolehlivě přepočítat.
-      ramec.style.cssText = "position:fixed;left:-9999px;top:0;width:900px;height:1280px;border:0;";
+      ramec.style.cssText =
+        `position:fixed;left:-9999px;top:0;width:${A4_SIRKA_PX}px;height:${A4_VYSKA_PX}px;border:0;`;
       document.body.appendChild(ramec);
     }
     return ramec;
@@ -202,6 +212,9 @@
     doc.open();
     doc.write(html);
     doc.close();
+    const styl = doc.createElement("style");
+    styl.textContent = STYL_PRO_FOCENI;
+    doc.head.appendChild(styl);
     // Krátká pauza na vykreslení QR obrázku a fontů, než se appka pustí
     // do "focení" rámce.
     await new Promise((hotovo) =>
@@ -223,23 +236,25 @@
     const prvek = ramec.contentDocument.querySelector(".list");
     if (!prvek) return { ok: false, chyba: "Vykreslený doklad se nepodařilo najít." };
 
-    // Doklad má na obrazovce "margin: 12px auto" (vystředěný v širším
-    // rámci, viz vysvětlení u ziskejTiskovyRamec). S foreignObjectRendering
-    // ale html2canvas ten boční odsazení od středění neumí spolehlivě
-    // ořezat — výsledný obrázek je pak o ten kousek posunutý a zleva
-    // useknutý. Doklad se proto před focením přilepí k levému okraji.
-    prvek.style.margin = "0";
-
     // foreignObjectRendering: true — bez něj html2canvas text ručně
     // "obkresluje" znak po znaku a v Safari/iOS se tím spolehlivě
     // rozdvojuje a jede přes sebe. S touhle volbou nechá vykreslit text
-    // přímo prohlížeč (přes SVG), což je jediný spolehlivý způsob na iOS.
+    // přímo prohlížeč (přes SVG). Rozměry a nulový posun se zadávají
+    // natvrdo, ať nic nezávisí na tom, jak si Safari spočítá polohu prvku.
     let canvas;
     try {
       canvas = await root.html2canvas(prvek, {
         scale: 2,
         backgroundColor: "#ffffff",
         foreignObjectRendering: true,
+        x: 0,
+        y: 0,
+        scrollX: 0,
+        scrollY: 0,
+        width: A4_SIRKA_PX,
+        height: A4_VYSKA_PX,
+        windowWidth: A4_SIRKA_PX,
+        windowHeight: A4_VYSKA_PX,
       });
     } catch (err) {
       return { ok: false, chyba: "Doklad se nepodařilo vykreslit do obrázku: " + err.message };
@@ -406,7 +421,7 @@
 
   async function info() {
     return {
-      verze: "1.0.0",
+      verze: "1.0.0 (mobil, sestavení 8)",
       slozkaDat: "Tento prohlížeč — data zůstávají jen na tomto zařízení (localStorage), nikam se neposílají.",
       electron: "web",
       node: navigator.userAgent,
