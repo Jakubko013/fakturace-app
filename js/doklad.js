@@ -82,8 +82,8 @@
     margin-top:2mm; padding:3mm; background:#16223a; color:#fff; border-radius:2mm;
     font-size:11pt; font-weight:600;
   }
-  .souhrn .celkem span { white-space:nowrap; }
-  .souhrn .celkem b { font-size:15pt; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .souhrn .celkem span { min-width:0; }
+  .souhrn .celkem b { font-size:15pt; font-variant-numeric:tabular-nums; white-space:nowrap; flex-shrink:0; }
 
   .platba { border:1px solid #dbe2ee; border-radius:2mm; padding:3mm; display:flex; gap:4mm; align-items:center; }
   .platba .qr img { width:30mm; height:30mm; display:block; }
