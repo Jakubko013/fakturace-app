@@ -198,34 +198,49 @@
     return ramec;
   }
 
+  /* Tisk z nově otevřeného okna musí spustit ono samo, svým vlastním
+     skriptem — volání okno.print() odsud, z appky, co ho otevřela, už
+     nemusí mít platné gesto uživatele (otevření okna ho mohlo spotřebovat,
+     i když šlo o reakci na stejné kliknutí). Vložený skript proto počká
+     na vykreslení (dvě requestAnimationFrame, bez setTimeout ze stejného
+     důvodu) a tiskne sám sebe. */
+  function vlozSkriptTisku(html) {
+    const skript =
+      "<script>(function(){function t(){try{window.focus();window.print();}catch(e){}}" +
+      "requestAnimationFrame(function(){requestAnimationFrame(t);});})();<\/script>";
+    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, skript + "</body>") : html + skript;
+  }
+
   async function vytisknout(html, cil) {
-    const oknoPredem = cil && !cil.closed ? cil : null;
-    let okno = oknoPredem;
-    let ramec = null;
-    try {
-      if (okno) {
+    const okno = cil && !cil.closed ? cil : null;
+    if (okno) {
+      try {
         okno.document.open();
-        okno.document.write(html);
+        okno.document.write(vlozSkriptTisku(html));
         okno.document.close();
-      } else {
-        ramec = ziskejTiskovyRamec();
-        const doc = ramec.contentDocument || ramec.contentWindow.document;
-        doc.open();
-        doc.write(html);
-        doc.close();
+      } catch (err) {
+        return { ok: false, chyba: "Náhled dokladu se nepodařilo vykreslit: " + err.message };
       }
+      return { ok: true };
+    }
+
+    // Nové okno se otevřít nepodařilo (blokování vyskakovacích oken,
+    // desktopový prohlížeč…) — záložní cesta přes skrytý rámec v appce,
+    // kde volání print() odsud funguje stejně jako dřív.
+    let ramec;
+    try {
+      ramec = ziskejTiskovyRamec();
+      const doc = ramec.contentDocument || ramec.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
     } catch (err) {
       return { ok: false, chyba: "Náhled dokladu se nepodařilo vykreslit: " + err.message };
     }
-    // Krátká pauza na vykreslení QR obrázku a fontů, než se otevře tisk.
-    // Záměrně přes requestAnimationFrame, ne setTimeout: v iOS Safari odložení
-    // print() za setTimeout ztrácí vazbu na gesto uživatele a dialog se tiše
-    // vůbec neotevře.
     await new Promise((hotovo) => root.requestAnimationFrame(() => root.requestAnimationFrame(hotovo)));
     try {
-      const cilOkna = okno || ramec.contentWindow;
-      cilOkna.focus();
-      cilOkna.print();
+      ramec.contentWindow.focus();
+      ramec.contentWindow.print();
     } catch (err) {
       return { ok: false, chyba: "Tisk se nepodařilo spustit: " + err.message };
     }
