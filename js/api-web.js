@@ -223,6 +223,13 @@
     const prvek = ramec.contentDocument.querySelector(".list");
     if (!prvek) return { ok: false, chyba: "Vykreslený doklad se nepodařilo najít." };
 
+    // Doklad má na obrazovce "margin: 12px auto" (vystředěný v širším
+    // rámci, viz vysvětlení u ziskejTiskovyRamec). S foreignObjectRendering
+    // ale html2canvas ten boční odsazení od středění neumí spolehlivě
+    // ořezat — výsledný obrázek je pak o ten kousek posunutý a zleva
+    // useknutý. Doklad se proto před focením přilepí k levému okraji.
+    prvek.style.margin = "0";
+
     // foreignObjectRendering: true — bez něj html2canvas text ručně
     // "obkresluje" znak po znaku a v Safari/iOS se tím spolehlivě
     // rozdvojuje a jede přes sebe. S touhle volbou nechá vykreslit text
