@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Import dat — Fakturace</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        background: #0c1220; color: #e7ecf5;
+        font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        padding: 20px;
+      }
+      .karta {
+        width: 100%; max-width: 420px; background: #141b2e; border: 1px solid #253252;
+        border-radius: 14px; padding: 24px;
+      }
+      h1 { font-size: 1.2rem; margin: 0 0 4px; }
+      p.popis { color: #92a0bd; margin: 0 0 18px; font-size: 0.9rem; }
+      .polozka { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #1e2740; font-size: 0.9rem; }
+      .polozka:last-child { border-bottom: none; }
+      .polozka span:first-child { color: #92a0bd; }
+      button {
+        width: 100%; margin-top: 20px; padding: 13px; border: none; border-radius: 10px;
+        background: #2563eb; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
+      }
+      button:disabled { opacity: 0.6; }
+      button.sekundarni { background: #1e2740; margin-top: 10px; }
+      .stav { margin-top: 16px; padding: 12px; border-radius: 8px; font-size: 0.9rem; display: none; }
+      .stav.uspech { display: block; background: #0f2e1e; color: #7fe3a8; border: 1px solid #1d5c3c; }
+      .stav.chyba { display: block; background: #3a1620; color: #ff9fae; border: 1px solid #6b2432; }
+      a { color: #7fb2ff; }
+    </style>
+  </head>
+  <body>
+    <div class="karta">
+      <h1>Import dat do appky</h1>
+      <p class="popis">Jednorázový přenos údajů, co jsi poslal(a) na vyhodnocení, do mobilní appky v tomhle prohlížeči.</p>
+      <div class="polozka"><span>Firma</span><span id="p-firma"></span></div>
+      <div class="polozka"><span>Klienti</span><span id="p-klienti"></span></div>
+      <div class="polozka"><span>Faktury</span><span id="p-faktury"></span></div>
+      <button id="btn-import">Naimportovat do appky</button>
+      <button id="btn-otevri" class="sekundarni" style="display:none">Otevřít appku</button>
+      <div id="stav" class="stav"></div>
+    </div>
+
+    <script>
+      var DATA = {"verze":1,"nastaveni":{"firma":{"jmeno":"Jakub Kočvara","ico":"24611581","dic":"","plateceDph":false,"ulice":"Ruská 1934/10","mesto":"Svitavy","psc":"56802","zeme":"Česká republika","tel":"+420723995526","email":"Jakubdev@outlook.cz","web":"","rejstrik":"Zapsáno v živnostenském rejstříku.","logo":null},"banka":{"ucet":"7239955265/6363","banka":"","iban":"CZ8963630000007239955265","swift":""},"faktura":{"splatnostDni":14,"formaUhrady":"prevodem","vychoziSazba":21,"vychoziJednotka":"ks","cenyVcetneDph":false,"zaokrouhlit":true,"qrPlatba":true,"textPredPolozkami":"Fakturujeme Vám:","patka":"Děkuji za spolupráci."},"dph":{"obdobi":"mesic"},"zalohovani":{"automaticky":true,"pocet":30},"cislovani":{"faktura":"{RRRR}{NNN}","zaloha":"Z{RRRR}{NNN}","dobropis":"D{RRRR}{NNN}"},"upominky":{"prvniPoDnech":3,"druhaPoDnech":14,"textPrvni":"Dobrý den,\n\ndovoluji si Vás upozornit, že faktura {CISLO} na částku {CASTKA} se splatností {SPLATNOST} nebyla dosud uhrazena.\n\nPokud jste platbu již odeslali, považujte prosím tuto zprávu za bezpředmětnou.\n\nS pozdravem\n{FIRMA}","textDruha":"Dobrý den,\n\nfaktura {CISLO} na částku {CASTKA} je {DNU} dní po splatnosti (splatnost byla {SPLATNOST}).\n\nProsím o její úhradu do sedmi dnů na účet {UCET}, variabilní symbol {VS}.\n\nS pozdravem\n{FIRMA}"}},"klienti":[{"id":"kmuqjngbrgvj0c","jmeno":"TJ sokol Bučovice","ico":"13693247","dic":"CZ13693247","ulice":"Zámecká 550","mesto":"Bučovice","psc":"68501","zeme":"Česká republika","email":"","tel":"","poznamka":"","vychoziSplatnost":null}],"faktury":[{"id":"fmuqjngbsofjr9","typ":"faktura","cislo":"1","vs":"1","ks":"","klientId":"kmuqjngbrgvj0c","odberatel":{"id":"kmuqjngbrgvj0c","jmeno":"TJ sokol Bučovice","ico":"13693247","dic":"CZ13693247","ulice":"Zámecká 550","mesto":"Bučovice","psc":"68501","zeme":"Česká republika","email":"","tel":"","poznamka":"","vychoziSplatnost":null},"datumVystaveni":"2026-09-08","duzp":"2026-09-08","datumSplatnosti":"2026-09-11","formaUhrady":"prevodem","rezim":"bezny","cenyVcetneDph":false,"zaokrouhlit":true,"slevaProc":0,"mena":"CZK","polozky":[{"id":"pmuqjngbt9evb5","popis":"trenérská asistenční činnost za měsíc srpen","mnozstvi":1,"jednotka":"měsíc","cenaZaMj":9000,"slevaProc":0,"sazba":0}],"odpocty":[],"uhrady":[],"textPredPolozkami":"Fakturujeme Vám:","poznamka":"","objednavka":"","stav":"vystavena","sablonaId":null,"upominky":[],"vytvoreno":1790920207721,"zmeneno":1790920207721},{"id":"fmuqjngbtsxu0x","typ":"faktura","cislo":"2","vs":"2","ks":"","klientId":"kmuqjngbrgvj0c","odberatel":{"id":"kmuqjngbrgvj0c","jmeno":"TJ sokol Bučovice","ico":"13693247","dic":"CZ13693247","ulice":"Zámecká 550","mesto":"Bučovice","psc":"68501","zeme":"Česká republika","email":"","tel":"","poznamka":"","vychoziSplatnost":null},"datumVystaveni":"2026-10-02","duzp":"2026-10-02","datumSplatnosti":"2026-10-09","formaUhrady":"prevodem","rezim":"bezny","cenyVcetneDph":false,"zaokrouhlit":true,"slevaProc":0,"mena":"CZK","polozky":[{"id":"pmuqjngbtdwac9","popis":"trenérská asistenční činnost za měsíc září","mnozstvi":1,"jednotka":"měsíc","cenaZaMj":11500,"slevaProc":0,"sazba":0}],"odpocty":[],"uhrady":[],"textPredPolozkami":"Fakturujeme Vám:","poznamka":"","objednavka":"","stav":"vystavena","sablonaId":null,"upominky":[],"vytvoreno":1790920207721,"zmeneno":1790920207721}],"vydaje":[],"sablony":[],"cenik":[],"cislovani":{},"vytvoreno":1790920207719};
+
+      var KLIC_DAT = "fakturace:data";
+
+      document.getElementById("p-firma").textContent = DATA.nastaveni.firma.jmeno || "—";
+      document.getElementById("p-klienti").textContent = DATA.klienti.length;
+      document.getElementById("p-faktury").textContent = DATA.faktury.length;
+
+      function razitko() {
+        var d = new Date();
+        function p(n) { return String(n).padStart(2, "0"); }
+        return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+          "_" + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds());
+      }
+
+      function ukazStav(trida, text) {
+        var el = document.getElementById("stav");
+        el.className = "stav " + trida;
+        el.textContent = text;
+      }
+
+      document.getElementById("btn-import").addEventListener("click", function () {
+        try {
+          var stavajici = localStorage.getItem(KLIC_DAT);
+          if (stavajici) {
+            var potvrzeno = confirm(
+              "V appce už nějaká data jsou. Přepsat je tímhle importem? " +
+              "(Současná data se před tím zálohují, jde je obnovit v Nastavení.)"
+            );
+            if (!potvrzeno) return;
+            localStorage.setItem("fakturace:zaloha:" + razitko(), stavajici);
+          }
+          localStorage.setItem(KLIC_DAT, JSON.stringify(DATA));
+          ukazStav("uspech", "Hotovo — data jsou naimportovaná. Otevři appku a zkontroluj je.");
+          document.getElementById("btn-import").style.display = "none";
+          document.getElementById("btn-otevri").style.display = "block";
+        } catch (err) {
+          ukazStav("chyba", "Import se nepovedl: " + err.message);
+        }
+      });
+
+      document.getElementById("btn-otevri").addEventListener("click", function () {
+        location.href = "./index.html";
+      });
+    </script>
+  </body>
+</html>
