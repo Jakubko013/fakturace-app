@@ -6,8 +6,11 @@
    přepne do normálního Safari, kde tisk funguje.
 
    Vykreslovaný doklad appka stránce předá přes localStorage (ne přímým
-   voláním z otvírajícího okna) — tisk se pak spouští odsud, vlastním
-   časovačem téhle stránky, ne cizím voláním zvenčí. */
+   voláním z otvírajícího okna) — tahle stránka si ho sama vyzvedne a
+   otevře jako nový dokument přes blob: URL (ne document.write() do sebe
+   sama, to nechávalo DOM v rozbitém, napůl přepsaném stavu). Tisk pak
+   spustí vložený skript uvnitř toho nového dokumentu, ne cizí volání
+   zvenčí. */
 (function () {
   "use strict";
 
@@ -41,25 +44,18 @@
     } catch (err) {
       /* nevadí, klíč se přepíše při dalším tisku */
     }
+    // Místo document.write() do už načtené stránky (to v téhle appce
+    // zanechávalo rozbité, napůl přepsané DOM — stará i nová stránka
+    // vykreslené přes sebe) se doklad otevře jako doopravdy nový dokument
+    // přes blob: URL. Skript, co appka do dokladu vložila (viz api-web.js),
+    // pak tisk spustí sám, jakmile se tahle nová stránka načte.
     try {
-      document.open();
-      document.write(obsah);
-      document.close();
+      var blob = new Blob([obsah], { type: "text/html" });
+      var url = URL.createObjectURL(blob);
+      location.replace(url);
     } catch (err) {
-      zobrazChybu("Doklad se nepodařilo vykreslit: " + err.message);
-      return;
+      zobrazChybu("Doklad se nepodařilo otevřít: " + err.message);
     }
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        try {
-          window.focus();
-          window.print();
-        } catch (err) {
-          /* Tiskový dialog se nepodařilo spustit automaticky — stránka
-             zůstává vykreslená, uživatel může zkusit tisk ručně. */
-        }
-      });
-    });
   }
 
   zkusNacist();

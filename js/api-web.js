@@ -209,11 +209,22 @@
     return ramec;
   }
 
+  /* Tisk.html dostane doklad sám spustit tisk — do zapsaného dokumentu se
+     proto vloží skript, který po vykreslení (dvě requestAnimationFrame,
+     bez setTimeout — to v iOS Safari ztrácí vazbu na gesto uživatele)
+     zavolá window.print() sám na sobě. */
+  function vlozSkriptTisku(html) {
+    const skript =
+      "<script>(function(){function t(){try{window.focus();window.print();}catch(e){}}" +
+      "requestAnimationFrame(function(){requestAnimationFrame(t);});})();<\/script>";
+    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, skript + "</body>") : html + skript;
+  }
+
   async function vytisknout(html, cil) {
     const okno = cil && !cil.closed ? cil : null;
     if (okno) {
       try {
-        localStorage.setItem(TISK_KLIC, html);
+        localStorage.setItem(TISK_KLIC, vlozSkriptTisku(html));
       } catch (err) {
         return { ok: false, chyba: "Doklad se nepodařilo předat k tisku: " + err.message };
       }
