@@ -186,6 +186,10 @@
   const TISK_KLIC = "fakturace:tisk-obsah";
 
   function pripravOknoTisku() {
+    // Jednosouborová appka (viz build-artifact.js) nemá vedle sebe žádnou
+    // tisk.html, na kterou by šlo navigovat — tam rovnou použijeme
+    // záložní tisk přes skrytý rámec v appce samotné.
+    if (root.FX_BEZ_TISK_STRANKY) return null;
     try {
       const okno = root.open(TISK_STRANKA, "_blank");
       return okno && !okno.closed ? okno : null;
