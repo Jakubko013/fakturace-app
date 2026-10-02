@@ -167,36 +167,19 @@
   }
 
   /* ---------------- tisk a PDF ----------------
-     Žádné okno na pozadí jako v Electronu — doklad se vytiskne přes
-     window.print(). V appce nainstalované na ploše iOS (standalone режим)
-     ale prázdné okno otevřené zevnitř appky (window.open("", "_blank"))
-     zůstává ve stejném omezeném zobrazení jako appka samotná — tisk z něj
-     nejde spustit vůbec, ani zevnitř jeho vlastního skriptu. Funguje jedině
-     skutečná navigace na reálnou stránku (tisk.html): tou appka na iOS
-     přepne do normálního Safari, kde window.print() funguje normálně.
+     window.print() z appky nainstalované na ploše iOS je dlouhodobě
+     nespolehlivý — ani skrytý rámec, ani nově otevřené okno, ani
+     samostatná stránka s voláním print() uvnitř sebe sama se nedaly
+     donutit tiskový/sdílecí list vůbec otevřít (standalone režim appku
+     v tomhle drží ve svém vlastním omezeném zobrazení).
 
-     Doklad se do tisk.html nepředává voláním odsud (to by zase bylo cizí
-     volání do okna, které si gesto uživatele nemusí přenést) — zapíše se
-     do localStorage a tisk.html si ho odtamtud sama vyzvedne a tiskne
-     sama sebe, vlastním časovačem. Když se stránku otevřít nepodaří
-     (blokování vyskakovacích oken, desktopový prohlížeč…), použije se
-     jako záloha skrytý rámec v appce jako dřív. */
-
-  const TISK_STRANKA = "tisk.html";
-  const TISK_KLIC = "fakturace:tisk-obsah";
-
-  function pripravOknoTisku() {
-    // Jednosouborová appka (viz build-artifact.js) nemá vedle sebe žádnou
-    // tisk.html, na kterou by šlo navigovat — tam rovnou použijeme
-    // záložní tisk přes skrytý rámec v appce samotné.
-    if (root.FX_BEZ_TISK_STRANKY) return null;
-    try {
-      const okno = root.open(TISK_STRANKA, "_blank");
-      return okno && !okno.closed ? okno : null;
-    } catch (err) {
-      return null;
-    }
-  }
+     Appka proto doklad sama vykreslí do skrytého rámce, "vyfotí" ho přes
+     html2canvas (knihovna v mobile/js/vendor/) a z toho obrázku sestaví
+     doopravdy PDF soubor přes jsPDF. Výsledek jde uložit/poslat přes
+     nativní Sdílecí list (navigator.share) — ten na rozdíl od
+     window.print() z appky na ploše iOS spolehlivě funguje. Když appka
+     Sdílecí list nemá k dispozici (starší systém, desktopový prohlížeč),
+     PDF se rovnou stáhne jako běžný soubor. */
 
   function ziskejTiskovyRamec() {
     let ramec = document.getElementById("fx-tisk-ramec");
@@ -209,49 +192,82 @@
     return ramec;
   }
 
-  /* Tisk.html dostane doklad sám spustit tisk — do zapsaného dokumentu se
-     proto vloží skript, který po vykreslení (dvě requestAnimationFrame,
-     bez setTimeout — to v iOS Safari ztrácí vazbu na gesto uživatele)
-     zavolá window.print() sám na sobě. */
-  function vlozSkriptTisku(html) {
-    const skript =
-      "<script>(function(){function t(){try{window.focus();window.print();}catch(e){}}" +
-      "requestAnimationFrame(function(){requestAnimationFrame(t);});})();<\/script>";
-    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, skript + "</body>") : html + skript;
+  async function vykresliDoRamce(html) {
+    const ramec = ziskejTiskovyRamec();
+    const doc = ramec.contentDocument || ramec.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+    // Krátká pauza na vykreslení QR obrázku a fontů, než se appka pustí
+    // do "focení" rámce.
+    await new Promise((hotovo) =>
+      ramec.contentWindow.requestAnimationFrame(() => ramec.contentWindow.requestAnimationFrame(hotovo))
+    );
+    return ramec;
   }
 
-  async function vytisknout(html, cil) {
-    const okno = cil && !cil.closed ? cil : null;
-    if (okno) {
-      try {
-        localStorage.setItem(TISK_KLIC, vlozSkriptTisku(html));
-      } catch (err) {
-        return { ok: false, chyba: "Doklad se nepodařilo předat k tisku: " + err.message };
-      }
-      return { ok: true };
+  async function sestavPdf(html) {
+    if (!root.html2canvas || !root.jspdf) {
+      return { ok: false, chyba: "Knihovna pro PDF se nenačetla — zkuste appku znovu načíst." };
     }
-
-    // Stránku pro tisk se nepodařilo otevřít (blokování vyskakovacích
-    // oken, desktopový prohlížeč…) — záložní cesta přes skrytý rámec
-    // v appce, kde volání print() odsud funguje stejně jako dřív.
     let ramec;
     try {
-      ramec = ziskejTiskovyRamec();
-      const doc = ramec.contentDocument || ramec.contentWindow.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
+      ramec = await vykresliDoRamce(html);
     } catch (err) {
       return { ok: false, chyba: "Náhled dokladu se nepodařilo vykreslit: " + err.message };
     }
-    await new Promise((hotovo) => root.requestAnimationFrame(() => root.requestAnimationFrame(hotovo)));
+    const prvek = ramec.contentDocument.querySelector(".list");
+    if (!prvek) return { ok: false, chyba: "Vykreslený doklad se nepodařilo najít." };
+
+    let canvas;
     try {
-      ramec.contentWindow.focus();
-      ramec.contentWindow.print();
+      canvas = await root.html2canvas(prvek, { scale: 2, backgroundColor: "#ffffff" });
     } catch (err) {
-      return { ok: false, chyba: "Tisk se nepodařilo spustit: " + err.message };
+      return { ok: false, chyba: "Doklad se nepodařilo vykreslit do obrázku: " + err.message };
     }
-    return { ok: true };
+
+    try {
+      const obrazek = canvas.toDataURL("image/jpeg", 0.92);
+      const pdf = new root.jspdf.jsPDF({ unit: "mm", format: "a4" });
+      pdf.addImage(obrazek, "JPEG", 0, 0, 210, 297, undefined, "FAST");
+      return { ok: true, blob: pdf.output("blob") };
+    } catch (err) {
+      return { ok: false, chyba: "PDF se nepodařilo sestavit: " + err.message };
+    }
+  }
+
+  async function stahniBlob(blob, nazev) {
+    const url = URL.createObjectURL(blob);
+    const odkaz = document.createElement("a");
+    odkaz.href = url;
+    odkaz.download = nazev;
+    document.body.appendChild(odkaz);
+    odkaz.click();
+    odkaz.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  async function ulozNeboSdilej(html, nazev) {
+    const vysledek = await sestavPdf(html);
+    if (!vysledek.ok) return vysledek;
+
+    const soubor = new File([vysledek.blob], nazev, { type: "application/pdf" });
+    if (root.navigator.canShare && root.navigator.canShare({ files: [soubor] })) {
+      try {
+        await root.navigator.share({ files: [soubor], title: nazev });
+        return { ok: true, cesta: "sdílecího listu" };
+      } catch (err) {
+        if (err && err.name === "AbortError") return { ok: false, zruseno: true };
+        // Sdílení se nezdařilo jinak než zrušením — zkusí se obyčejné stažení.
+      }
+    }
+
+    try {
+      await stahniBlob(vysledek.blob, nazev);
+      return { ok: true, cesta: "stažených souborů" };
+    } catch (err) {
+      return { ok: false, chyba: "PDF se nepodařilo uložit: " + err.message };
+    }
   }
 
   /* ---------------- QR platba ---------------- */
@@ -388,9 +404,8 @@
     data: { nacti, uloz, zaloha, seznamZaloh, export: exportDat, import: importDat },
     soubor: { ulozText, otevri: async () => ({ ok: true }) },
     pdf: {
-      pripravCil: pripravOknoTisku,
-      uloz: (html, nazev, cil) => vytisknout(html, cil),
-      tisk: (html, cil) => vytisknout(html, cil),
+      uloz: (html, nazev) => ulozNeboSdilej(html, nazev || "faktura.pdf"),
+      tisk: (html) => ulozNeboSdilej(html, "faktura.pdf"),
     },
     qr: (text) => vytvorQr(text),
     ares: (ico) => najdiIco(ico),

@@ -438,9 +438,6 @@
   /* ---------------- tisk a uložení ---------------- */
 
   async function ulozPdf(faktura, data) {
-    // Otevřít cílové okno hned teď, synchronně, dokud ještě platí gesto
-    // uživatele (viz api-web.js) — po await už by to mohlo být pozdě.
-    const cil = root.api.pdf.pripravCil ? root.api.pdf.pripravCil() : null;
     const html = await htmlDokladu(faktura, data);
     const nazev =
       util.nazevSouboru(
@@ -448,14 +445,9 @@
           (faktura.odberatel && faktura.odberatel.jmeno) || ""
         }`
       ) + ".pdf";
-    const odpoved = await root.api.pdf.uloz(html, nazev, cil);
+    const odpoved = await root.api.pdf.uloz(html, nazev);
     if (odpoved.ok) {
-      Fx.ui.hlaska(
-        root.api.platforma === "web"
-          ? "Otevřel se tiskový dialog — zvolte Uložit jako PDF."
-          : "PDF uloženo do " + odpoved.cesta,
-        "uspech"
-      );
+      Fx.ui.hlaska("PDF uloženo do " + odpoved.cesta, "uspech");
     } else if (!odpoved.zruseno) {
       Fx.ui.hlaska("PDF se nepodařilo uložit: " + odpoved.chyba, "chyba");
     }
@@ -463,9 +455,8 @@
   }
 
   async function tisk(faktura, data) {
-    const cil = root.api.pdf.pripravCil ? root.api.pdf.pripravCil() : null;
     const html = await htmlDokladu(faktura, data);
-    return root.api.pdf.tisk(html, cil);
+    return root.api.pdf.tisk(html);
   }
 
   Fx.doklad = { htmlDokladu, ulozPdf, tisk };
