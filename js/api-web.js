@@ -167,9 +167,25 @@
   }
 
   /* ---------------- tisk a PDF ----------------
-     Žádné okno na pozadí jako v Electronu — doklad se vykreslí do skrytého
-     rámce uvnitř stránky a zavolá se na něj window.print(). Tím se otevře
-     systémový tiskový dialog, kde si uživatel zvolí "Uložit jako PDF". */
+     Žádné okno na pozadí jako v Electronu — doklad se vytiskne přes
+     window.print(). V nainstalované appce na ploše iOS (standalone режим)
+     ale window.print() ze skrytého rámce uvnitř appky neudělá vůbec nic —
+     Safari v tomhle režimu nativní tiskové UI z vlastní stránky appky
+     nepustí. Proto se nejdřív (ještě synchronně, v obsluze kliknutí, dokud
+     platí gesto uživatele) otevře prázdné okno — tím appka "vyskočí" do
+     normálního Safari, kde window.print() funguje — a teprve do něj se
+     později zapíše vykreslený doklad. Když se okno otevřít nepodaří
+     (blokování vyskakovacích oken, desktopový prohlížeč…), použije se
+     jako záloha skrytý rámec jako dřív. */
+
+  function pripravOknoTisku() {
+    try {
+      const okno = root.open("", "_blank");
+      return okno && !okno.closed ? okno : null;
+    } catch (err) {
+      return null;
+    }
+  }
 
   function ziskejTiskovyRamec() {
     let ramec = document.getElementById("fx-tisk-ramec");
@@ -182,14 +198,22 @@
     return ramec;
   }
 
-  async function vytisknout(html) {
-    let ramec;
+  async function vytisknout(html, cil) {
+    const oknoPredem = cil && !cil.closed ? cil : null;
+    let okno = oknoPredem;
+    let ramec = null;
     try {
-      ramec = ziskejTiskovyRamec();
-      const doc = ramec.contentDocument || ramec.contentWindow.document;
-      doc.open();
-      doc.write(html);
-      doc.close();
+      if (okno) {
+        okno.document.open();
+        okno.document.write(html);
+        okno.document.close();
+      } else {
+        ramec = ziskejTiskovyRamec();
+        const doc = ramec.contentDocument || ramec.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+      }
     } catch (err) {
       return { ok: false, chyba: "Náhled dokladu se nepodařilo vykreslit: " + err.message };
     }
@@ -199,8 +223,9 @@
     // vůbec neotevře.
     await new Promise((hotovo) => root.requestAnimationFrame(() => root.requestAnimationFrame(hotovo)));
     try {
-      ramec.contentWindow.focus();
-      ramec.contentWindow.print();
+      const cilOkna = okno || ramec.contentWindow;
+      cilOkna.focus();
+      cilOkna.print();
     } catch (err) {
       return { ok: false, chyba: "Tisk se nepodařilo spustit: " + err.message };
     }
@@ -340,7 +365,11 @@
     platforma: "web",
     data: { nacti, uloz, zaloha, seznamZaloh, export: exportDat, import: importDat },
     soubor: { ulozText, otevri: async () => ({ ok: true }) },
-    pdf: { uloz: (html) => vytisknout(html), tisk: (html) => vytisknout(html) },
+    pdf: {
+      pripravCil: pripravOknoTisku,
+      uloz: (html, nazev, cil) => vytisknout(html, cil),
+      tisk: (html, cil) => vytisknout(html, cil),
+    },
     qr: (text) => vytvorQr(text),
     ares: (ico) => najdiIco(ico),
     app: { info, otevriSlozkuDat },

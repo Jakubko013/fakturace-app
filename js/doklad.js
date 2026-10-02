@@ -438,6 +438,9 @@
   /* ---------------- tisk a uložení ---------------- */
 
   async function ulozPdf(faktura, data) {
+    // Otevřít cílové okno hned teď, synchronně, dokud ještě platí gesto
+    // uživatele (viz api-web.js) — po await už by to mohlo být pozdě.
+    const cil = root.api.pdf.pripravCil ? root.api.pdf.pripravCil() : null;
     const html = await htmlDokladu(faktura, data);
     const nazev =
       util.nazevSouboru(
@@ -445,7 +448,7 @@
           (faktura.odberatel && faktura.odberatel.jmeno) || ""
         }`
       ) + ".pdf";
-    const odpoved = await root.api.pdf.uloz(html, nazev);
+    const odpoved = await root.api.pdf.uloz(html, nazev, cil);
     if (odpoved.ok) {
       Fx.ui.hlaska(
         root.api.platforma === "web"
@@ -460,8 +463,9 @@
   }
 
   async function tisk(faktura, data) {
+    const cil = root.api.pdf.pripravCil ? root.api.pdf.pripravCil() : null;
     const html = await htmlDokladu(faktura, data);
-    return root.api.pdf.tisk(html);
+    return root.api.pdf.tisk(html, cil);
   }
 
   Fx.doklad = { htmlDokladu, ulozPdf, tisk };
