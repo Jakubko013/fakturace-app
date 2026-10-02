@@ -223,9 +223,17 @@
     const prvek = ramec.contentDocument.querySelector(".list");
     if (!prvek) return { ok: false, chyba: "Vykreslený doklad se nepodařilo najít." };
 
+    // foreignObjectRendering: true — bez něj html2canvas text ručně
+    // "obkresluje" znak po znaku a v Safari/iOS se tím spolehlivě
+    // rozdvojuje a jede přes sebe. S touhle volbou nechá vykreslit text
+    // přímo prohlížeč (přes SVG), což je jediný spolehlivý způsob na iOS.
     let canvas;
     try {
-      canvas = await root.html2canvas(prvek, { scale: 2, backgroundColor: "#ffffff" });
+      canvas = await root.html2canvas(prvek, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        foreignObjectRendering: true,
+      });
     } catch (err) {
       return { ok: false, chyba: "Doklad se nepodařilo vykreslit do obrázku: " + err.message };
     }
