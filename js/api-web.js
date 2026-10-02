@@ -186,7 +186,11 @@
     if (!ramec) {
       ramec = document.createElement("iframe");
       ramec.id = "fx-tisk-ramec";
-      ramec.style.cssText = "position:fixed;left:-9999px;top:0;width:800px;height:1120px;border:0;";
+      // Šířka musí ležet mimo obě mobilní "zoom" pravidla v doklad.js
+      // (zmenšují náhled na šířku ≤820px, ať se vejde na telefon) — jinak
+      // html2canvas vykreslí text rozdvojený a rozjetý, protože CSS zoom
+      // neumí spolehlivě přepočítat.
+      ramec.style.cssText = "position:fixed;left:-9999px;top:0;width:900px;height:1280px;border:0;";
       document.body.appendChild(ramec);
     }
     return ramec;
