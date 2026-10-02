@@ -168,19 +168,26 @@
 
   /* ---------------- tisk a PDF ----------------
      Žádné okno na pozadí jako v Electronu — doklad se vytiskne přes
-     window.print(). V nainstalované appce na ploše iOS (standalone режим)
-     ale window.print() ze skrytého rámce uvnitř appky neudělá vůbec nic —
-     Safari v tomhle režimu nativní tiskové UI z vlastní stránky appky
-     nepustí. Proto se nejdřív (ještě synchronně, v obsluze kliknutí, dokud
-     platí gesto uživatele) otevře prázdné okno — tím appka "vyskočí" do
-     normálního Safari, kde window.print() funguje — a teprve do něj se
-     později zapíše vykreslený doklad. Když se okno otevřít nepodaří
+     window.print(). V appce nainstalované na ploše iOS (standalone режим)
+     ale prázdné okno otevřené zevnitř appky (window.open("", "_blank"))
+     zůstává ve stejném omezeném zobrazení jako appka samotná — tisk z něj
+     nejde spustit vůbec, ani zevnitř jeho vlastního skriptu. Funguje jedině
+     skutečná navigace na reálnou stránku (tisk.html): tou appka na iOS
+     přepne do normálního Safari, kde window.print() funguje normálně.
+
+     Doklad se do tisk.html nepředává voláním odsud (to by zase bylo cizí
+     volání do okna, které si gesto uživatele nemusí přenést) — zapíše se
+     do localStorage a tisk.html si ho odtamtud sama vyzvedne a tiskne
+     sama sebe, vlastním časovačem. Když se stránku otevřít nepodaří
      (blokování vyskakovacích oken, desktopový prohlížeč…), použije se
-     jako záloha skrytý rámec jako dřív. */
+     jako záloha skrytý rámec v appce jako dřív. */
+
+  const TISK_STRANKA = "tisk.html";
+  const TISK_KLIC = "fakturace:tisk-obsah";
 
   function pripravOknoTisku() {
     try {
-      const okno = root.open("", "_blank");
+      const okno = root.open(TISK_STRANKA, "_blank");
       return okno && !okno.closed ? okno : null;
     } catch (err) {
       return null;
@@ -198,35 +205,20 @@
     return ramec;
   }
 
-  /* Tisk z nově otevřeného okna musí spustit ono samo, svým vlastním
-     skriptem — volání okno.print() odsud, z appky, co ho otevřela, už
-     nemusí mít platné gesto uživatele (otevření okna ho mohlo spotřebovat,
-     i když šlo o reakci na stejné kliknutí). Vložený skript proto počká
-     na vykreslení (dvě requestAnimationFrame, bez setTimeout ze stejného
-     důvodu) a tiskne sám sebe. */
-  function vlozSkriptTisku(html) {
-    const skript =
-      "<script>(function(){function t(){try{window.focus();window.print();}catch(e){}}" +
-      "requestAnimationFrame(function(){requestAnimationFrame(t);});})();<\/script>";
-    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, skript + "</body>") : html + skript;
-  }
-
   async function vytisknout(html, cil) {
     const okno = cil && !cil.closed ? cil : null;
     if (okno) {
       try {
-        okno.document.open();
-        okno.document.write(vlozSkriptTisku(html));
-        okno.document.close();
+        localStorage.setItem(TISK_KLIC, html);
       } catch (err) {
-        return { ok: false, chyba: "Náhled dokladu se nepodařilo vykreslit: " + err.message };
+        return { ok: false, chyba: "Doklad se nepodařilo předat k tisku: " + err.message };
       }
       return { ok: true };
     }
 
-    // Nové okno se otevřít nepodařilo (blokování vyskakovacích oken,
-    // desktopový prohlížeč…) — záložní cesta přes skrytý rámec v appce,
-    // kde volání print() odsud funguje stejně jako dřív.
+    // Stránku pro tisk se nepodařilo otevřít (blokování vyskakovacích
+    // oken, desktopový prohlížeč…) — záložní cesta přes skrytý rámec
+    // v appce, kde volání print() odsud funguje stejně jako dřív.
     let ramec;
     try {
       ramec = ziskejTiskovyRamec();

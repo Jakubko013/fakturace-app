@@ -1,16 +1,18 @@
 /* Service worker mobilní appky Fakturace.
    Při změně souborů appky zvyš CACHE_VERSION, jinak si telefony s appkou
    nainstalovanou na ploše nechají starou verzi. */
-const CACHE_VERZE = "fakturace-mobile-v1";
+const CACHE_VERZE = "fakturace-mobile-v2";
 
 const PRECACHE = [
   "./index.html",
+  "./tisk.html",
   "./styles-mobile.css",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",
   "./apple-touch-icon.png",
   "./js/api-web.js",
+  "./js/tisk-stranka.js",
   "./js/mobile-nav.js",
   "./js/registrace-sw.js",
   "./js/vendor/qrcode.min.js",
