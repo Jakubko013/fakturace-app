@@ -194,7 +194,10 @@
       return { ok: false, chyba: "Náhled dokladu se nepodařilo vykreslit: " + err.message };
     }
     // Krátká pauza na vykreslení QR obrázku a fontů, než se otevře tisk.
-    await new Promise((hotovo) => setTimeout(hotovo, 400));
+    // Záměrně přes requestAnimationFrame, ne setTimeout: v iOS Safari odložení
+    // print() za setTimeout ztrácí vazbu na gesto uživatele a dialog se tiše
+    // vůbec neotevře.
+    await new Promise((hotovo) => root.requestAnimationFrame(() => root.requestAnimationFrame(hotovo)));
     try {
       ramec.contentWindow.focus();
       ramec.contentWindow.print();
